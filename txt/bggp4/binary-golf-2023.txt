@@ -1,0 +1,181 @@
++-------------------------------------------------------------------------------
+| Binary Golf Grand Prix '23
+|
+| by hed0x 
+|   ~ hed0x@linuxmail.org
+|
+| Jul 29, 2023.
++-------------------------------------------------------------------------------
+
+; ------------------------------------------------------------------------------
+; Introduction
+; ------------------------------------------------------------------------------
+
+This is my first writeup ever. I never coded in Assembly, although I always
+wanted to learn it. I believe that doing something towards a challenge, motivates
+me much more that just writing code.
+
+Here is what I've done for the Binary Golf Grand Prix '23
+
+
+; ------------------------------------------------------------------------------
+; BINARY GOLF GRAND PRIX (BGGP) 4/2023: The challenge
+; ------------------------------------------------------------------------------
+
+The next lines were extracted from the BGGP4 web page [1]:
+
+Goal: Create the smallest self-replicating file.
+
+Requirements:
+    - Produce exactly 1 copy of itself
+    - Name the copy "4"
+    - Not execute the copied file 
+    - Print, return, or display the number 4 
+
+
+
+
+; ------------------------------------------------------------------------------
+; My solution
+; ------------------------------------------------------------------------------
+
+The very first piece of code set the memory offset where the code will be loaded.
+For more information on .COM files, please check [5][6].
+
+- - -
+    org 100h
+- - -
+
+The next code is responsible to copy data (1024 bytes) starting from the label 
+'start' to the memory segment 0x7C.
+
+- - -
+    mov ax, cs
+    mov ds, ax
+    mov es, ax
+    mov si, start
+    mov di, 7C0h
+    mov cx, 1024
+    cld
+    rep movsb
+- - -
+
+We start it by printing the character '4' on the screen, using BIOS 
+interrupt 0x10 [3]. This interrupt allows us to write the character, stored in 
+register al, to the teletype (tty):
+
+- - -
+    mov ah, 0x0E
+    mov al, '4'
+    int 0x10
+- - -
+
+To create a file we use the interrupt 21 Service 60 (code 0x3C). The only parameter
+is the file name (fn) that should be stores in the register dx.
+
+- - -
+    mov dx, fn
+    mov ah, 0x3C
+    int 0x21
+- - -
+
+The output of the previous operation is the file handler stored in register ax.
+We move it to the register bx just because we will need it there for when writing
+the data to the disk.
+
+- - -
+    mov bx, ax
+- - -
+
+Now we write the data into a file. The number of bytes should be in the cx 
+register, the buffer address should be in dx and the code of the operation to be 
+performed should be stored in ah register. According to [2] the code is 0x40.
+Last, interrupt 0x21 is called to perform the operation.
+
+- - -
+    mov cx, size
+    mov dx, start
+    mov ah, 0x40 ; Write to file function
+    int 0x21
+- - -
+
+The next part closes the file handle. The code 0x3E refers to this operation [2].
+
+- - -
+    mov ah, 0x3E
+    int 0x21
+- - -
+
+The data used in previous commands are the following:
+
+- - -
+fn db '4.COM', 0
+size equ $ - start
+```
+
+
+; ------------------------------------------------------------------------------
+; Assembler
+; ------------------------------------------------------------------------------
+
+The whole source code can be found at [7]. To build it I used the NASM assembler
+with the following command [4]:
+
+> nasm -f bin bggp4-hed0x.asm -o bggp4-hed0x.com
+
+
+
+; ------------------------------------------------------------------------------
+; Checksum
+; ------------------------------------------------------------------------------
+
+The SHA256 checksum of both original file and copy are exactly the same:
+
+> sha256sum bggp4-hed0x.com
+    99622d24b81ec6ec663669a00679e8fd02cba2400d2ce1893420122622ec336d *bggp4-hed0x.com
+
+> sha256sum 4.COM
+    99622d24b81ec6ec663669a00679e8fd02cba2400d2ce1893420122622ec336d *4.COM
+
+
+
+; ------------------------------------------------------------------------------
+; Base64 encoding
+; ------------------------------------------------------------------------------
+
+> base64 bggp4-hed0x.com
+    jMiO2I7AvgABv8AHuQAE/POktA6wNM0QujABtDzNIYnDuTYAugABtEDNIbQ+zSHDNC5DT00A
+
+
+
+
+; ------------------------------------------------------------------------------
+; The final submission
+; ------------------------------------------------------------------------------
+
+---BEGIN BGGP4 ENTRY---
+Name or handle: hed0x
+Contact Info: hed0x@linuxmail.org
+Website, twitter, other online presence: http://hed0x.github.io
+Target File Type: COM
+SHA256 Hash: 99622d24b81ec6ec663669a00679e8fd02cba2400d2ce1893420122622ec336d
+Target Environment (How do we run the file?): DOSBox
+Any additional info?: No.
+Link to PoC video, screenshot, or console output, if any: N/A.
+Link to writeup, if any: http://hed0x.github.io/txt/bggp4/binary-golf-2023.txt
+File contents (base64 encoded please): jMiO2I7AvgABv8AHuQAE/POktA6wNM0QujABtDzNIYnDuTYAugABtEDNIbQ+zSHDNC5DT00A
+---END BGGP4 ENTRY---
+    
+
+
+; ------------------------------------------------------------------------------
+; References
+; ------------------------------------------------------------------------------
+
+[1] https://binary.golf/
+[2] https://grandidierite.github.io/dos-interrupts/
+[3] https://grandidierite.github.io/bios-interrupts/
+[4] https://www.nasm.us
+[5] https://www.nasm.us/xdoc/2.16.01/html/nasmdoc9.html#section-9.2
+[6] COM Walkthrough: https://imgur.com/cuyliWz
+[7] http://hed0x.github.io/txt/bggp4/
