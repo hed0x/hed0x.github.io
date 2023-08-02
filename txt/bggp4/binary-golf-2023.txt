@@ -178,4 +178,4 @@ File contents (base64 encoded please): jMiO2I7AvgABv8AHuQAE/POktA6wNM0QujABtDzNI
 [4] https://www.nasm.us
 [5] https://www.nasm.us/xdoc/2.16.01/html/nasmdoc9.html#section-9.2
 [6] COM Walkthrough: https://imgur.com/cuyliWz
-[7] http://hed0x.github.io/txt/bggp4/
+[7] https://github.com/hed0x/hed0x.github.io/tree/main/txt/bggp4
